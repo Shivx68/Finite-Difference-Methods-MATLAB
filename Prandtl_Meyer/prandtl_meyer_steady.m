@@ -61,7 +61,7 @@ iter = 0;
   F4 = (gamma/(gamma-1))*p.*u + rho.*u.*(u.^2 + v.^2)/2;
   
   %%%% Start of Marching loop
-  for i = 2
+  for i = 1
   
   % Updating G for each marching step
 
@@ -92,7 +92,7 @@ iter = 0;
   % eps = eps + deps;
   
   xi = xi + xi_stepsize;
-  xi = 10.5;
+  
   % Initializing h and deta_dx for each marching iteration
   eta_a = 0;
   if (xi <= 10)
@@ -111,291 +111,314 @@ iter = 0;
   for j = 2:n_y-1
 
     % Predictor Step  
-    dF1_deps_p(i,j) = deta_dx(j)*(F1(i,j) - F1(i,j+1))/deta + (1/h)*(G1(i,j) - G1(i,j+1))/deta;
-    dF2_deps_p(i,j) = deta_dx(j)*(F2(i,j) - F2(i,j+1))/deta + (1/h)*(G2(i,j) - G2(i,j+1))/deta;
-    dF3_deps_p(i,j) = deta_dx(j)*(F3(i,j) - F3(i,j+1))/deta + (1/h)*(G3(i,j) - G3(i,j+1))/deta;
-    dF4_deps_p(i,j) = deta_dx(j)*(F4(i,j) - F4(i,j+1))/deta + (1/h)*(G4(i,j) - G4(i,j+1))/deta;
+    dF1_dxi_p(j,i) = deta_dx(j)*(F1(j,i) - F1(j+1,i))/eta_stepsize + (1/h)*(G1(j,i) - G1(j+1,i))/eta_stepsize;
+    dF2_dxi_p(j,i) = deta_dx(j)*(F2(j,i) - F2(j+1,i))/eta_stepsize + (1/h)*(G2(j,i) - G2(j+1,i))/eta_stepsize;
+    dF3_dxi_p(j,i) = deta_dx(j)*(F3(j,i) - F3(j+1,i))/eta_stepsize + (1/h)*(G3(j,i) - G3(j+1,i))/eta_stepsize;
+    dF4_dxi_p(j,i) = deta_dx(j)*(F4(j,i) - F4(j+1,i))/eta_stepsize + (1/h)*(G4(j,i) - G4(j+1,i))/eta_stepsize;
 
   end
   
   % Computing Artificial viscosity for Predictor Step %%%%%%%%%
   for j = 2:n_y-1
-    SF1(i,j) = Cy*abs(p(i,j+1) - 2*p(i,j) + p(i,j-1))/(p(i,j+1) + 2*p(i,j) + p(i,j-1))*(F1(i,j+1) - 2*F1(i,j) + F1(i,j-1));
-    SF2(i,j) = Cy*abs(p(i,j+1) - 2*p(i,j) + p(i,j-1))/(p(i,j+1) + 2*p(i,j) + p(i,j-1))*(F2(i,j+1) - 2*F2(i,j) + F2(i,j-1));
-    SF3(i,j) = Cy*abs(p(i,j+1) - 2*p(i,j) + p(i,j-1))/(p(i,j+1) + 2*p(i,j) + p(i,j-1))*(F3(i,j+1) - 2*F3(i,j) + F3(i,j-1));
-    SF4(i,j) = Cy*abs(p(i,j+1) - 2*p(i,j) + p(i,j-1))/(p(i,j+1) + 2*p(i,j) + p(i,j-1))*(F4(i,j+1) - 2*F4(i,j) + F4(i,j-1));
+    SF1(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F1(j+1,i) - 2*F1(j,i) + F1(j-1,i));
+    SF2(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F2(j+1,i) - 2*F2(j,i) + F2(j-1,i));
+    SF3(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F3(j+1,i) - 2*F3(j,i) + F3(j-1,i));
+    SF4(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F4(j+1,i) - 2*F4(j,i) + F4(j-1,i));
   end
   
-  for j = 2:n_y-1
-    % Predictor Update
-    F1(i+1,j) = F1(i,j) + dF1_deps_p(i,j)*deps + SF1(i,j);
-    F2(i+1,j) = F2(i,j) + dF2_deps_p(i,j)*deps + SF2(i,j);
-    F3(i+1,j) = F3(i,j) + dF3_deps_p(i,j)*deps + SF3(i,j);
-    F4(i+1,j) = F4(i,j) + dF4_deps_p(i,j)*deps + SF4(i,j);
-  end
-  
-  for j = 2:n_y-1
-    % Finding rho and p from F
-    A = F3(i+1,j)^2/(2*F1(i+1,j)) - F4(i+1,j);
-    B = gamma/(gamma-1)*F1(i+1,j)*F2(i+1,j);
-    C = -(gamma+1)/(2*(gamma-1))*F1(i+1,j)^3;
+  % for j = 2:n_y-1
+  %   % Predictor Update
+  %   F1(j,i+1) = F1(j,i) + dF1_dxi_p(j,i)*xi_stepsize + SF1(j,i);
+  %   F2(j,i+1) = F2(j,i) + dF2_dxi_p(j,i)*xi_stepsize + SF2(j,i);
+  %   F3(j,i+1) = F3(j,i) + dF3_dxi_p(j,i)*xi_stepsize + SF3(j,i);
+  %   F4(j,i+1) = F4(j,i) + dF4_dxi_p(j,i)*xi_stepsize + SF4(j,i);
+  % end
 
-    rho(i+1,j) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-    p(i+1,j) = F2(i+1,j) - F1(i+1,j)^2/rho(i+1,j);
-  end
-  
-  for j = 2:n_y-1
-    % Computing G from rho and F
-    G1(i+1,j) = rho(i+1,j)*(F3(i+1,j)/F1(i+1,j));
-    G2(i+1,j) = F3(i+1,j);
-    G3(i+1,j) = rho(i+1,j)*(F3(i+1,j)/F1(i+1,j))^2 + F2(i+1,j) - F1(i+1,j)^2/rho(i+1,j);
-    G4(i+1,j) = gamma/(gamma-1)*(F2(i+1,j) - F1(i+1,j)^2/rho(i+1,j))*F3(i+1,j)/F1(i+1,j) + rho(i+1,j)/2*F3(i+1,j)/F1(i+1,j)*((F1(i+1,j)/rho(i+1,j))^2 + (F3(i+1,j)/F1(i+1,j))^2);
-  end
-  
+  F1(2:n_y-1,i+1) = F1(2:n_y-1,i) + dF1_dxi_p(2:n_y-1,i)*xi_stepsize + SF1(2:n_y-1,i);
+  F2(2:n_y-1,i+1) = F2(2:n_y-1,i) + dF2_dxi_p(2:n_y-1,i)*xi_stepsize + SF2(2:n_y-1,i);
+  F3(2:n_y-1,i+1) = F3(2:n_y-1,i) + dF3_dxi_p(2:n_y-1,i)*xi_stepsize + SF3(2:n_y-1,i);
+  F4(2:n_y-1,i+1) = F4(2:n_y-1,i) + dF4_dxi_p(2:n_y-1,i)*xi_stepsize + SF4(2:n_y-1,i);
 
-  % Corrector step
-  for j = 2:n_y-1
-    dF1_deps_c(i,j) = deta_dx(j)*(F1(i+1,j-1) - F1(i+1,j))/deta + (1/h)*(G1(i+1,j-1) - G1(i+1,j))/deta;
-    dF2_deps_c(i,j) = deta_dx(j)*(F2(i+1,j-1) - F2(i+1,j))/deta + (1/h)*(G2(i+1,j-1) - G2(i+1,j))/deta;
-    dF3_deps_c(i,j) = deta_dx(j)*(F3(i+1,j-1) - F3(i+1,j))/deta + (1/h)*(G3(i+1,j-1) - G3(i+1,j))/deta;
-    dF4_deps_c(i,j) = deta_dx(j)*(F4(i+1,j-1) - F4(i+1,j))/deta + (1/h)*(G4(i+1,j-1) - G4(i+1,j))/deta;
-  end
-  
-  for j = 2:n_y-1
-    % Finding the average derivatives
-    dF1_deps_avg(i,j) = 1/2*(dF1_deps_p(i,j)+dF1_deps_c(i,j));
-    dF2_deps_avg(i,j) = 1/2*(dF2_deps_p(i,j)+dF2_deps_c(i,j));
-    dF3_deps_avg(i,j) = 1/2*(dF3_deps_p(i,j)+dF3_deps_c(i,j));
-    dF4_deps_avg(i,j) = 1/2*(dF4_deps_p(i,j)+dF4_deps_c(i,j));
-  end
-  
-  % Computing Artificial Viscosity for the corrector step
-  for j = 2:n_y-1 %%%%%%%%%% define Cy
-    SF1(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F1(i+1,j+1) - 2*F1(i+1,j) + F1(i+1,j-1));
-    SF2(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F2(i+1,j+1) - 2*F2(i+1,j) + F2(i+1,j-1));
-    SF3(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F3(i+1,j+1) - 2*F3(i+1,j) + F3(i+1,j-1));
-    SF4(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F4(i+1,j+1) - 2*F4(i+1,j) + F4(i+1,j-1));
-  end
-  
-  for j = 2:n_y-1  
-    % Final Update
-    F1(i+1,j) = F1(i,j) + dF1_deps_avg(i,j)*deps + SF1(i+1,j);
-    F2(i+1,j) = F2(i,j) + dF2_deps_avg(i,j)*deps + SF2(i+1,j);
-    F3(i+1,j) = F3(i,j) + dF3_deps_avg(i,j)*deps + SF3(i+1,j);
-    F4(i+1,j) = F4(i,j) + dF4_deps_avg(i,j)*deps + SF4(i+1,j);
-  end
-  
-  % Final Update of the primitive variables
-  for j = 2:n_y-1
-    % Finding corrected rho from corrected F
-    A = F3(i+1,j)^2/(2*F1(i+1,j)) - F4(i+1,j);
-    B = gamma/(gamma-1)*F1(i+1,j)*F2(i+1,j);
-    C = -(gamma+1)/(2*(gamma-1))*F1(i+1,j)^3;
+  %%%%% Here
+  % for j = 2:n_y-1
+  %   % Finding rho and p from F
+  %   A = F3(j,i+1)^2/(2*F1(j,i+1)) - F4(j,i+1);
+  %   B = gamma/(gamma-1)*F1(j,i+1)*F2(j,i+1);
+  %   C = -(gamma+1)/(2*(gamma-1))*F1(j,i+1)^3;
+  % 
+  %   rho(j,i+1) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  %   %p(j,i+1) = F2(i+1,j) - F1(i+1,j)^2/rho(i+1,j);
+  % end
 
-    rho(i+1,j) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  end
-  
-  for j = 2:n_y-1
-    % Finding corrected u, v, p, T, M from corrected rho and F
-    u(i+1,j) = F1(i+1,j)/rho(i+1,j);
-    v(i+1,j) = F3(i+1,j)/F1(i+1,j);
-    p(i+1,j) = F2(i+1,j) - u(i+1,j)*F1(i+1,j);
-    T(i+1,j) = p(i+1,j)/(rho(i+1,j)*R); %%%%%%%% define R
-    a(i+1,j) = sqrt(gamma*R*T(i+1,j));
-    M(i+1,j) = (sqrt(v(i+1,j)^2 + u(i+1, j)^2))/a(i+1,j);
-  end
-  
-  % Applying the boundary conditions
-  % Bottom boundary
-  % Predictor step
-  dF1_deps_p(i,1) = deta_dx(1)*(F1(i,1) - F1(i,2))/deta + (1/h)*(G1(i,1) - G1(i,2))/deta;
-  dF2_deps_p(i,1) = deta_dx(1)*(F2(i,1) - F2(i,2))/deta + (1/h)*(G2(i,1) - G2(i,2))/deta;
-  dF3_deps_p(i,1) = deta_dx(1)*(F3(i,1) - F3(i,2))/deta + (1/h)*(G3(i,1) - G3(i,2))/deta;
-  dF4_deps_p(i,1) = deta_dx(1)*(F4(i,1) - F4(i,2))/deta + (1/h)*(G4(i,1) - G4(i,2))/deta;
-  
-  % Predictor Update
-  F1(i+1,1) = F1(i,1) + dF1_deps_p(i,1)*deps;
-  F2(i+1,1) = F2(i,1) + dF2_deps_p(i,1)*deps;
-  F3(i+1,1) = F3(i,1) + dF3_deps_p(i,1)*deps;
-  F4(i+1,1) = F4(i,1) + dF4_deps_p(i,1)*deps;
+  A = F3(2:n_y-1,i+1).^2./(2*F1(2:n_y-1,i+1)) - F4(2:n_y-1,i+1);
+  B = gamma/(gamma-1)*F1(2:n_y-1,i+1).*F2(2:n_y-1,i+1);
+  C = -(gamma+1)/(2*(gamma-1))*F1(2:n_y-1,i+1).^3;
 
-  % Computing rho
-  A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
-  B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
-  C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
+  rho(2:n_y-1,i+1) = (-B + sqrt(B.^2 - 4*A.*C))./(2*A);
 
-  rho(i+1,1) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+
   
-  % Computing G
-  G1(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1));
-  G2(i+1,1) = F3(i+1,1);
-  G3(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1))^2 + F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1);
-  G4(i+1,1) = gamma/(gamma-1)*(F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1))*F3(i+1,1)/F1(i+1,1) + rho(i+1,1)/2*F3(i+1,1)/F1(i+1,1)*((F1(i+1,1)/rho(i+1,1))^2 + (F3(i+1,1)/F1(i+1,1))^2);
+  % for j = 2:n_y-1
+  %   % Computing G from rho and F
+  %   G1(j,i+1) = rho(j,i+1)*F3(j,i+1)/F1(j,i+1);
+  %   G2(j,i+1) = F3(j,i+1);
+  %   G3(j,i+1) = rho(j,i+1)*(F3(j,i+1)/F1(j,i+1))^2 + F2(j,i+1) - F1(j,i+1)^2/rho(j,i+1);
+  %   G4(j,i+1) = gamma/(gamma-1)*(F2(j,i+1) - F1(j,i+1)^2/rho(j,i+1))*F3(j,i+1)/F1(j,i+1) ...
+  %       + rho(j,i+1)/2*F3(j,i+1)/F1(j,i+1)*((F1(j,i+1)/rho(j,i+1))^2 + (F3(j,i+1)/F1(j,i+1))^2);
+  % end
+
+  G1a(2:n_y-1, i+1) = rho(2:n_y-1,i+1).*F3(2:n_y-1,i+1)./F1(2:n_y-1,i+1);
+  G2a(2:n_y-1, i+1) = F3(2:n_y-1, i+1);
+  G3a(2:n_y-1, i+1) = rho(2:n_y-1, i+1).*(F3(2:n_y-1, i+1)./F1(2:n_y-1, i+1)).^2 + ...
+      F2(2:n_y-1, i+1) - F1(2:n_y-1, i+1).^2./rho(2:n_y-1, i+1);
+  G4a(2:n_y-1, i+1) = gamma/(gamma-1)*(F2(2:n_y-1, i+1) - F1(2:n_y-1, i+1).^2./rho(2:n_y-1, i+1)).*F3(2:n_y-1, i+1)./F1(2:n_y-1, i+1) ...
+        + rho(2:n_y-1, i+1)/2.*F3(2:n_y-1, i+1)./F1(2:n_y-1, i+1).*((F1(2:n_y-1, i+1)./rho(2:n_y-1, i+1)).^2 + (F3(2:n_y-1, i+1)./F1(2:n_y-1, i+1)).^2);
+  
 
   % Corrector step
-  dF1_deps_c(i,1) = deta_dx(1)*(F1(i+1,1) - F1(i+1,2))/deta + (1/h)*(G1(i+1,1) - G1(i+1,2))/deta;
-  dF2_deps_c(i,1) = deta_dx(1)*(F2(i+1,1) - F2(i+1,2))/deta + (1/h)*(G2(i+1,1) - G2(i+1,2))/deta;
-  dF3_deps_c(i,1) = deta_dx(1)*(F3(i+1,1) - F3(i+1,2))/deta + (1/h)*(G3(i+1,1) - G3(i+1,2))/deta;
-  dF4_deps_c(i,1) = deta_dx(1)*(F4(i+1,1) - F4(i+1,2))/deta + (1/h)*(G4(i+1,1) - G4(i+1,2))/deta;
-  
-  % Computing average
-  dF1_deps_avg(i,1) = 1/2*(dF1_deps_p(i,1)+dF1_deps_c(i,1));
-  dF2_deps_avg(i,1) = 1/2*(dF2_deps_p(i,1)+dF2_deps_c(i,1));
-  dF3_deps_avg(i,1) = 1/2*(dF3_deps_p(i,1)+dF3_deps_c(i,1));
-  dF4_deps_avg(i,1) = 1/2*(dF4_deps_p(i,1)+dF4_deps_c(i,1));
-  
-  % Final boundary node update
-  F1(i+1,1) = F1(i,1) + dF1_deps_avg(i,1)*deps;
-  F2(i+1,1) = F2(i,1) + dF2_deps_avg(i,1)*deps;
-  F3(i+1,1) = F3(i,1) + dF3_deps_avg(i,1)*deps;
-  F4(i+1,1) = F4(i,1) + dF4_deps_avg(i,1)*deps;
-  
-  % Computing corrected rho at the boundary
-  A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
-  B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
-  C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
-
-  rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  
-  % Computing primitive boundary values
-  u_cal = F1(i+1,1)/rho_cal;
-  v_cal = F3(i+1,1)/F1(i+1,1);
-  p_cal = F2(i+1,1) - u_cal*F1(i+1,1); %%%%%%%%%%%
-  T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
-  a_cal = sqrt(gamma*R*T_cal);
-  M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
-  
-  % Computing the calculated Prandtl-Meyer function
-  f_cal = prandtl_meyer_function(M_cal);
-  
-  % Computing the Prandtl-Meyer rotation angle
-  if (eps <= 10)
-    phi = atand(v_cal/u_cal);
-  else
-    psi = atand(abs(v_cal)/u_cal);
-    phi = theta - psi;
-  end
-  
-  % Computing the actual Prandtl-Meyer function
-  f_act = f_cal + phi;
-  
-  % Computing the M_act using Newton-Raphson method
-  tol = 1e-4;
-  error = 1;
-  RF = 0.1;
-  dM = 1e-4;
-  M_act = 1;  % guess value
-  while error > tol
-    M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
-    error = abs(F(f_act, M_act));
+  for j = 2:n_y-1
+    dF1_dxi_c(j,i) = deta_dx(j)*(F1(j-1,i+1) - F1(j-1,i+1))/eta_stepsize + (1/h)*(G1(j-1,i+1) - G1(j,i+1))/eta_stepsize;
+    dF2_dxi_c(j,i) = deta_dx(j)*(F2(j-1,i+1) - F2(j-1,i+1))/eta_stepsize + (1/h)*(G2(j-1,i+1) - G2(j,i+1))/eta_stepsize;
+    dF3_dxi_c(j,i) = deta_dx(j)*(F3(j-1,i+1) - F3(j-1,i+1))/eta_stepsize + (1/h)*(G3(j-1,i+1) - G3(j,i+1))/eta_stepsize;
+    dF4_dxi_c(j,i) = deta_dx(j)*(F4(j-1,i+1) - F4(j-1,i+1))/eta_stepsize + (1/h)*(G4(j-1,i+1) - G4(j,i+1))/eta_stepsize;
   end
 
-  % Computing the actual values of primitive variables on the boundary
-  p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
-  T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
-  rho_act = p_act/(R*T_act);
-  
-  % Updating the boundary node with actual boundary values
-  p(i+1,1) = p_act;
-  T(i+1,1) = T_act;
-  rho(i+1,1) = rho_act;
-  u(i+1,1) = u_cal;
-  v(i+1,1) = - u_cal*tand(theta);
-  M(i+1,1) = M_act;
-  a(i+1,1) = (sqrt(gamma*R*T(i+1,1)));
-  
-  % Top boundary
-  % Predictor step
-  dF1_deps_p(i,n_y) = deta_dx(n_y)*(F1(i,n_y-1) - F1(i,n_y))/deta + (1/h)*(G1(i,n_y-1) - G1(i,n_y))/deta;
-  dF2_deps_p(i,n_y) = deta_dx(n_y)*(F2(i,n_y-1) - F2(i,n_y))/deta + (1/h)*(G2(i,n_y-1) - G2(i,n_y))/deta;
-  dF3_deps_p(i,n_y) = deta_dx(n_y)*(F3(i,n_y-1) - F3(i,n_y))/deta + (1/h)*(G3(i,n_y-1) - G3(i,n_y))/deta;
-  dF4_deps_p(i,n_y) = deta_dx(n_y)*(F4(i,n_y-1) - F4(i,n_y))/deta + (1/h)*(G4(i,n_y-1) - G4(i,n_y))/deta;
-  
-  % Predictor Update
-  F1(i+1,n_y) = F1(i,n_y) + dF1_deps_p(i,n_y)*deps;
-  F2(i+1,n_y) = F2(i,n_y) + dF2_deps_p(i,n_y)*deps;
-  F3(i+1,n_y) = F3(i,n_y) + dF3_deps_p(i,n_y)*deps;
-  F4(i+1,n_y) = F4(i,n_y) + dF4_deps_p(i,n_y)*deps;
-
-  % Computing rho
-  A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
-  B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
-  C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
-
-  rho(i+1,n_y) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  
-  % Computing G
-  G1(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y));
-  G2(i+1,n_y) = F3(i+1,n_y);
-  G3(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y))^2 + F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y);
-  G4(i+1,n_y) = gamma/(gamma-1)*(F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y))*F3(i+1,n_y)/F1(i+1,n_y) + rho(i+1,n_y)/2*F3(i+1,n_y)/F1(i+1,n_y)*((F1(i+1,n_y)/rho(i+1,n_y))^2 + (F3(i+1,n_y)/F1(i+1,n_y))^2);
-
-  % Corrector step
-  dF1_deps_c(i,n_y) = deta_dx(n_y)*(F1(i+1,n_y-1) - F1(i+1,n_y))/deta + (1/h)*(G1(i+1,n_y-1) - G1(i+1,n_y))/deta;
-  dF2_deps_c(i,n_y) = deta_dx(n_y)*(F2(i+1,n_y-1) - F2(i+1,n_y))/deta + (1/h)*(G2(i+1,n_y-1) - G2(i+1,n_y))/deta;
-  dF3_deps_c(i,n_y) = deta_dx(n_y)*(F3(i+1,n_y-1) - F3(i+1,n_y))/deta + (1/h)*(G3(i+1,n_y-1) - G3(i+1,n_y))/deta;
-  dF4_deps_c(i,n_y) = deta_dx(n_y)*(F4(i+1,n_y-1) - F4(i+1,n_y))/deta + (1/h)*(G4(i+1,n_y-1) - G4(i+1,n_y))/deta;
-  
-  % Computing average
-  dF1_deps_avg(i,n_y) = 1/2*(dF1_deps_p(i,n_y)+dF1_deps_c(i,n_y));
-  dF2_deps_avg(i,n_y) = 1/2*(dF2_deps_p(i,n_y)+dF2_deps_c(i,n_y));
-  dF3_deps_avg(i,n_y) = 1/2*(dF3_deps_p(i,n_y)+dF3_deps_c(i,n_y));
-  dF4_deps_avg(i,n_y) = 1/2*(dF4_deps_p(i,n_y)+dF4_deps_c(i,n_y));
-  
-  % Final boundary node update
-  F1(i+1,n_y) = F1(i,n_y) + dF1_deps_avg(i,n_y)*deps;
-  F2(i+1,n_y) = F2(i,n_y) + dF2_deps_avg(i,n_y)*deps;
-  F3(i+1,n_y) = F3(i,n_y) + dF3_deps_avg(i,n_y)*deps;
-  F4(i+1,n_y) = F4(i,n_y) + dF4_deps_avg(i,n_y)*deps;
-  
-  % Computing corrected rho at the boundary
-  A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
-  B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
-  C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
-
-  rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  
-  % Computing primitive boundary values
-  u_cal = F1(i+1,n_y)/rho_cal;
-  v_cal = F3(i+1,n_y)/F1(i+1,n_y);
-  p_cal = F2(i+1,n_y) - u_cal*F1(i+1,n_y); %%%%%%%%%%%
-  T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
-  a_cal = sqrt(gamma*R*T_cal);
-  M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
-  
-  % Computing the calculated Prandtl-Meyer function
-  f_cal = prandtl_meyer_function(M_cal);
-  
-  % Computing the Prandtl-Meyer rotation angle
-  phi = atand(v_cal/u_cal);
-  
-  % Computing the actual Prandtl-Meyer function
-  f_act = f_cal + phi;
-  
-  % Computing the M_act using Newton-Raphson method
-  tol = 1e-4;
-  error = 1;
-  RF = 0.1;
-  dM = 1e-4;
-  M_act = 1;  % guess value
-  while error > tol
-    M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
-   error = abs(F(f_act, M_act));
-  end
-
-  % Computing the actual values of primitive variables on the boundary
-  p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
-  T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
-  rho_act = p_act/(R*T_act);
-  
-  % Updating the boundary node with actual boundary values
-  p(i+1,n_y) = p_act;
-  T(i+1,n_y) = T_act;
-  rho(i+1,n_y) = rho_act;
-  u(i+1,n_y) = u_cal;
-  v(i+1,n_y) = - u_cal*tand(theta);
-  M(i+1,n_y) = M_act;
-  a(i+1,n_y) = (sqrt(gamma*R*T(i+1,n_y)));
+  % 
+  % for j = 2:n_y-1
+  %   % Finding the average derivatives
+  %   dF1_deps_avg(i,j) = 1/2*(dF1_deps_p(i,j)+dF1_deps_c(i,j));
+  %   dF2_deps_avg(i,j) = 1/2*(dF2_deps_p(i,j)+dF2_deps_c(i,j));
+  %   dF3_deps_avg(i,j) = 1/2*(dF3_deps_p(i,j)+dF3_deps_c(i,j));
+  %   dF4_deps_avg(i,j) = 1/2*(dF4_deps_p(i,j)+dF4_deps_c(i,j));
+  % end
+  % 
+  % % Computing Artificial Viscosity for the corrector step
+  % for j = 2:n_y-1 %%%%%%%%%% define Cy
+  %   SF1(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F1(i+1,j+1) - 2*F1(i+1,j) + F1(i+1,j-1));
+  %   SF2(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F2(i+1,j+1) - 2*F2(i+1,j) + F2(i+1,j-1));
+  %   SF3(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F3(i+1,j+1) - 2*F3(i+1,j) + F3(i+1,j-1));
+  %   SF4(i+1,j) = Cy*abs(p(i+1,j+1) - 2*p(i+1,j) + p(i+1,j-1))/(p(i+1,j+1) + 2*p(i+1,j) + p(i+1,j-1))*(F4(i+1,j+1) - 2*F4(i+1,j) + F4(i+1,j-1));
+  % end
+  % 
+  % for j = 2:n_y-1  
+  %   % Final Update
+  %   F1(i+1,j) = F1(i,j) + dF1_deps_avg(i,j)*deps + SF1(i+1,j);
+  %   F2(i+1,j) = F2(i,j) + dF2_deps_avg(i,j)*deps + SF2(i+1,j);
+  %   F3(i+1,j) = F3(i,j) + dF3_deps_avg(i,j)*deps + SF3(i+1,j);
+  %   F4(i+1,j) = F4(i,j) + dF4_deps_avg(i,j)*deps + SF4(i+1,j);
+  % end
+  % 
+  % % Final Update of the primitive variables
+  % for j = 2:n_y-1
+  %   % Finding corrected rho from corrected F
+  %   A = F3(i+1,j)^2/(2*F1(i+1,j)) - F4(i+1,j);
+  %   B = gamma/(gamma-1)*F1(i+1,j)*F2(i+1,j);
+  %   C = -(gamma+1)/(2*(gamma-1))*F1(i+1,j)^3;
+  % 
+  %   rho(i+1,j) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % end
+  % 
+  % for j = 2:n_y-1
+  %   % Finding corrected u, v, p, T, M from corrected rho and F
+  %   u(i+1,j) = F1(i+1,j)/rho(i+1,j);
+  %   v(i+1,j) = F3(i+1,j)/F1(i+1,j);
+  %   p(i+1,j) = F2(i+1,j) - u(i+1,j)*F1(i+1,j);
+  %   T(i+1,j) = p(i+1,j)/(rho(i+1,j)*R); %%%%%%%% define R
+  %   a(i+1,j) = sqrt(gamma*R*T(i+1,j));
+  %   M(i+1,j) = (sqrt(v(i+1,j)^2 + u(i+1, j)^2))/a(i+1,j);
+  % end
+  % 
+  % % Applying the boundary conditions
+  % % Bottom boundary
+  % % Predictor step
+  % dF1_deps_p(i,1) = deta_dx(1)*(F1(i,1) - F1(i,2))/deta + (1/h)*(G1(i,1) - G1(i,2))/deta;
+  % dF2_deps_p(i,1) = deta_dx(1)*(F2(i,1) - F2(i,2))/deta + (1/h)*(G2(i,1) - G2(i,2))/deta;
+  % dF3_deps_p(i,1) = deta_dx(1)*(F3(i,1) - F3(i,2))/deta + (1/h)*(G3(i,1) - G3(i,2))/deta;
+  % dF4_deps_p(i,1) = deta_dx(1)*(F4(i,1) - F4(i,2))/deta + (1/h)*(G4(i,1) - G4(i,2))/deta;
+  % 
+  % % Predictor Update
+  % F1(i+1,1) = F1(i,1) + dF1_deps_p(i,1)*deps;
+  % F2(i+1,1) = F2(i,1) + dF2_deps_p(i,1)*deps;
+  % F3(i+1,1) = F3(i,1) + dF3_deps_p(i,1)*deps;
+  % F4(i+1,1) = F4(i,1) + dF4_deps_p(i,1)*deps;
+  % 
+  % % Computing rho
+  % A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
+  % B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
+  % 
+  % rho(i+1,1) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing G
+  % G1(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1));
+  % G2(i+1,1) = F3(i+1,1);
+  % G3(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1))^2 + F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1);
+  % G4(i+1,1) = gamma/(gamma-1)*(F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1))*F3(i+1,1)/F1(i+1,1) + rho(i+1,1)/2*F3(i+1,1)/F1(i+1,1)*((F1(i+1,1)/rho(i+1,1))^2 + (F3(i+1,1)/F1(i+1,1))^2);
+  % 
+  % % Corrector step
+  % dF1_deps_c(i,1) = deta_dx(1)*(F1(i+1,1) - F1(i+1,2))/deta + (1/h)*(G1(i+1,1) - G1(i+1,2))/deta;
+  % dF2_deps_c(i,1) = deta_dx(1)*(F2(i+1,1) - F2(i+1,2))/deta + (1/h)*(G2(i+1,1) - G2(i+1,2))/deta;
+  % dF3_deps_c(i,1) = deta_dx(1)*(F3(i+1,1) - F3(i+1,2))/deta + (1/h)*(G3(i+1,1) - G3(i+1,2))/deta;
+  % dF4_deps_c(i,1) = deta_dx(1)*(F4(i+1,1) - F4(i+1,2))/deta + (1/h)*(G4(i+1,1) - G4(i+1,2))/deta;
+  % 
+  % % Computing average
+  % dF1_deps_avg(i,1) = 1/2*(dF1_deps_p(i,1)+dF1_deps_c(i,1));
+  % dF2_deps_avg(i,1) = 1/2*(dF2_deps_p(i,1)+dF2_deps_c(i,1));
+  % dF3_deps_avg(i,1) = 1/2*(dF3_deps_p(i,1)+dF3_deps_c(i,1));
+  % dF4_deps_avg(i,1) = 1/2*(dF4_deps_p(i,1)+dF4_deps_c(i,1));
+  % 
+  % % Final boundary node update
+  % F1(i+1,1) = F1(i,1) + dF1_deps_avg(i,1)*deps;
+  % F2(i+1,1) = F2(i,1) + dF2_deps_avg(i,1)*deps;
+  % F3(i+1,1) = F3(i,1) + dF3_deps_avg(i,1)*deps;
+  % F4(i+1,1) = F4(i,1) + dF4_deps_avg(i,1)*deps;
+  % 
+  % % Computing corrected rho at the boundary
+  % A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
+  % B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
+  % 
+  % rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing primitive boundary values
+  % u_cal = F1(i+1,1)/rho_cal;
+  % v_cal = F3(i+1,1)/F1(i+1,1);
+  % p_cal = F2(i+1,1) - u_cal*F1(i+1,1); %%%%%%%%%%%
+  % T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
+  % a_cal = sqrt(gamma*R*T_cal);
+  % M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
+  % 
+  % % Computing the calculated Prandtl-Meyer function
+  % f_cal = prandtl_meyer_function(M_cal);
+  % 
+  % % Computing the Prandtl-Meyer rotation angle
+  % if (eps <= 10)
+  %   phi = atand(v_cal/u_cal);
+  % else
+  %   psi = atand(abs(v_cal)/u_cal);
+  %   phi = theta - psi;
+  % end
+  % 
+  % % Computing the actual Prandtl-Meyer function
+  % f_act = f_cal + phi;
+  % 
+  % % Computing the M_act using Newton-Raphson method
+  % tol = 1e-4;
+  % error = 1;
+  % RF = 0.1;
+  % dM = 1e-4;
+  % M_act = 1;  % guess value
+  % while error > tol
+  %   M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
+  %   error = abs(F(f_act, M_act));
+  % end
+  % 
+  % % Computing the actual values of primitive variables on the boundary
+  % p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
+  % T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
+  % rho_act = p_act/(R*T_act);
+  % 
+  % % Updating the boundary node with actual boundary values
+  % p(i+1,1) = p_act;
+  % T(i+1,1) = T_act;
+  % rho(i+1,1) = rho_act;
+  % u(i+1,1) = u_cal;
+  % v(i+1,1) = - u_cal*tand(theta);
+  % M(i+1,1) = M_act;
+  % a(i+1,1) = (sqrt(gamma*R*T(i+1,1)));
+  % 
+  % % Top boundary
+  % % Predictor step
+  % dF1_deps_p(i,n_y) = deta_dx(n_y)*(F1(i,n_y-1) - F1(i,n_y))/deta + (1/h)*(G1(i,n_y-1) - G1(i,n_y))/deta;
+  % dF2_deps_p(i,n_y) = deta_dx(n_y)*(F2(i,n_y-1) - F2(i,n_y))/deta + (1/h)*(G2(i,n_y-1) - G2(i,n_y))/deta;
+  % dF3_deps_p(i,n_y) = deta_dx(n_y)*(F3(i,n_y-1) - F3(i,n_y))/deta + (1/h)*(G3(i,n_y-1) - G3(i,n_y))/deta;
+  % dF4_deps_p(i,n_y) = deta_dx(n_y)*(F4(i,n_y-1) - F4(i,n_y))/deta + (1/h)*(G4(i,n_y-1) - G4(i,n_y))/deta;
+  % 
+  % % Predictor Update
+  % F1(i+1,n_y) = F1(i,n_y) + dF1_deps_p(i,n_y)*deps;
+  % F2(i+1,n_y) = F2(i,n_y) + dF2_deps_p(i,n_y)*deps;
+  % F3(i+1,n_y) = F3(i,n_y) + dF3_deps_p(i,n_y)*deps;
+  % F4(i+1,n_y) = F4(i,n_y) + dF4_deps_p(i,n_y)*deps;
+  % 
+  % % Computing rho
+  % A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
+  % B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
+  % 
+  % rho(i+1,n_y) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing G
+  % G1(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y));
+  % G2(i+1,n_y) = F3(i+1,n_y);
+  % G3(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y))^2 + F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y);
+  % G4(i+1,n_y) = gamma/(gamma-1)*(F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y))*F3(i+1,n_y)/F1(i+1,n_y) + rho(i+1,n_y)/2*F3(i+1,n_y)/F1(i+1,n_y)*((F1(i+1,n_y)/rho(i+1,n_y))^2 + (F3(i+1,n_y)/F1(i+1,n_y))^2);
+  % 
+  % % Corrector step
+  % dF1_deps_c(i,n_y) = deta_dx(n_y)*(F1(i+1,n_y-1) - F1(i+1,n_y))/deta + (1/h)*(G1(i+1,n_y-1) - G1(i+1,n_y))/deta;
+  % dF2_deps_c(i,n_y) = deta_dx(n_y)*(F2(i+1,n_y-1) - F2(i+1,n_y))/deta + (1/h)*(G2(i+1,n_y-1) - G2(i+1,n_y))/deta;
+  % dF3_deps_c(i,n_y) = deta_dx(n_y)*(F3(i+1,n_y-1) - F3(i+1,n_y))/deta + (1/h)*(G3(i+1,n_y-1) - G3(i+1,n_y))/deta;
+  % dF4_deps_c(i,n_y) = deta_dx(n_y)*(F4(i+1,n_y-1) - F4(i+1,n_y))/deta + (1/h)*(G4(i+1,n_y-1) - G4(i+1,n_y))/deta;
+  % 
+  % % Computing average
+  % dF1_deps_avg(i,n_y) = 1/2*(dF1_deps_p(i,n_y)+dF1_deps_c(i,n_y));
+  % dF2_deps_avg(i,n_y) = 1/2*(dF2_deps_p(i,n_y)+dF2_deps_c(i,n_y));
+  % dF3_deps_avg(i,n_y) = 1/2*(dF3_deps_p(i,n_y)+dF3_deps_c(i,n_y));
+  % dF4_deps_avg(i,n_y) = 1/2*(dF4_deps_p(i,n_y)+dF4_deps_c(i,n_y));
+  % 
+  % % Final boundary node update
+  % F1(i+1,n_y) = F1(i,n_y) + dF1_deps_avg(i,n_y)*deps;
+  % F2(i+1,n_y) = F2(i,n_y) + dF2_deps_avg(i,n_y)*deps;
+  % F3(i+1,n_y) = F3(i,n_y) + dF3_deps_avg(i,n_y)*deps;
+  % F4(i+1,n_y) = F4(i,n_y) + dF4_deps_avg(i,n_y)*deps;
+  % 
+  % % Computing corrected rho at the boundary
+  % A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
+  % B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
+  % 
+  % rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing primitive boundary values
+  % u_cal = F1(i+1,n_y)/rho_cal;
+  % v_cal = F3(i+1,n_y)/F1(i+1,n_y);
+  % p_cal = F2(i+1,n_y) - u_cal*F1(i+1,n_y); %%%%%%%%%%%
+  % T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
+  % a_cal = sqrt(gamma*R*T_cal);
+  % M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
+  % 
+  % % Computing the calculated Prandtl-Meyer function
+  % f_cal = prandtl_meyer_function(M_cal);
+  % 
+  % % Computing the Prandtl-Meyer rotation angle
+  % phi = atand(v_cal/u_cal);
+  % 
+  % % Computing the actual Prandtl-Meyer function
+  % f_act = f_cal + phi;
+  % 
+  % % Computing the M_act using Newton-Raphson method
+  % tol = 1e-4;
+  % error = 1;
+  % RF = 0.1;
+  % dM = 1e-4;
+  % M_act = 1;  % guess value
+  % while error > tol
+  %   M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
+  %  error = abs(F(f_act, M_act));
+  % end
+  % 
+  % % Computing the actual values of primitive variables on the boundary
+  % p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
+  % T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
+  % rho_act = p_act/(R*T_act);
+  % 
+  % % Updating the boundary node with actual boundary values
+  % p(i+1,n_y) = p_act;
+  % T(i+1,n_y) = T_act;
+  % rho(i+1,n_y) = rho_act;
+  % u(i+1,n_y) = u_cal;
+  % v(i+1,n_y) = - u_cal*tand(theta);
+  % M(i+1,n_y) = M_act;
+  % a(i+1,n_y) = (sqrt(gamma*R*T(i+1,n_y)));
 
 
   end

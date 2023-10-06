@@ -288,56 +288,119 @@ iter = 0;
   rho_cal1 = rho(1,i+1);
   u_cal1 = u(1,i+1);
   v_cal1 = v(1,i+1);
-  p_cal1 = p(1,i+1); 
-  T_cal1 = T(1,i+1); 
+  p_cal1 = p(1,i+1); %%%%%%%%%%%
+  T_cal1 = T(1,i+1); %%%%%%%% define R
   a_cal1 = a(1,i+1);
   M_cal1 = M(1,i+1);
 
-   
-  % Computing the calculated Prandtl-Meyer function
-  f_cal1 = prandtl_meyer_function(M_cal1,gamma);
-
-  % Computing the Prandtl-Meyer rotation angle
-  if (xi <= 10)
-    phi1 = atand(v_cal1/u_cal1);
-  else
-    psi1 = atand(abs(v_cal1)/u_cal1);
-    phi1 = theta - psi1;
-  end
-
+  % for j = 2:n_y-1
+  %   % Finding corrected u, v, p, T, M from corrected rho and F
+  %   ua(i+1,j) = F1(i+1,j)/rho(i+1,j);
+  %   va(i+1,j) = F3(i+1,j)/F1(i+1,j);
+  %   pa(i+1,j) = F2(i+1,j) - u(i+1,j)*F1(i+1,j);
+  %   Ta(i+1,j) = p(i+1,j)/(rho(i+1,j)*R); %%%%%%%% define R
+  %   aa(i+1,j) = sqrt(gamma*R*T(i+1,j));
+  %   Ma(i+1,j) = (sqrt(v(i+1,j)^2 + u(i+1, j)^2))/a(i+1,j);
+  % end
   % 
-  % Computing the actual Prandtl-Meyer function
-  f_act1 = f_cal1 + phi1;
-
-  M_act1 = fsolve(@(M) F (M,f_act1,gamma), M_cal1);
+  % % Applying the boundary conditions
+  % % Bottom boundary
+  % % Predictor step
+  % dF1_deps_p(i,1) = deta_dx(1)*(F1(i,1) - F1(i,2))/deta + (1/h)*(G1(i,1) - G1(i,2))/deta;
+  % dF2_deps_p(i,1) = deta_dx(1)*(F2(i,1) - F2(i,2))/deta + (1/h)*(G2(i,1) - G2(i,2))/deta;
+  % dF3_deps_p(i,1) = deta_dx(1)*(F3(i,1) - F3(i,2))/deta + (1/h)*(G3(i,1) - G3(i,2))/deta;
+  % dF4_deps_p(i,1) = deta_dx(1)*(F4(i,1) - F4(i,2))/deta + (1/h)*(G4(i,1) - G4(i,2))/deta;
   % 
-
+  % % Predictor Update
+  % F1(i+1,1) = F1(i,1) + dF1_deps_p(i,1)*deps;
+  % F2(i+1,1) = F2(i,1) + dF2_deps_p(i,1)*deps;
+  % F3(i+1,1) = F3(i,1) + dF3_deps_p(i,1)*deps;
+  % F4(i+1,1) = F4(i,1) + dF4_deps_p(i,1)*deps;
+  % 
+  % % Computing rho
+  % A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
+  % B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
+  % 
+  % rho(i+1,1) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing G
+  % G1(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1));
+  % G2(i+1,1) = F3(i+1,1);
+  % G3(i+1,1) = rho(i+1,1)*(F3(i+1,1)/F1(i+1,1))^2 + F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1);
+  % G4(i+1,1) = gamma/(gamma-1)*(F2(i+1,1) - F1(i+1,1)^2/rho(i+1,1))*F3(i+1,1)/F1(i+1,1) + rho(i+1,1)/2*F3(i+1,1)/F1(i+1,1)*((F1(i+1,1)/rho(i+1,1))^2 + (F3(i+1,1)/F1(i+1,1))^2);
+  % 
+  % % Corrector step
+  % dF1_deps_c(i,1) = deta_dx(1)*(F1(i+1,1) - F1(i+1,2))/deta + (1/h)*(G1(i+1,1) - G1(i+1,2))/deta;
+  % dF2_deps_c(i,1) = deta_dx(1)*(F2(i+1,1) - F2(i+1,2))/deta + (1/h)*(G2(i+1,1) - G2(i+1,2))/deta;
+  % dF3_deps_c(i,1) = deta_dx(1)*(F3(i+1,1) - F3(i+1,2))/deta + (1/h)*(G3(i+1,1) - G3(i+1,2))/deta;
+  % dF4_deps_c(i,1) = deta_dx(1)*(F4(i+1,1) - F4(i+1,2))/deta + (1/h)*(G4(i+1,1) - G4(i+1,2))/deta;
+  % 
+  % % Computing average
+  % dF1_deps_avg(i,1) = 1/2*(dF1_deps_p(i,1)+dF1_deps_c(i,1));
+  % dF2_deps_avg(i,1) = 1/2*(dF2_deps_p(i,1)+dF2_deps_c(i,1));
+  % dF3_deps_avg(i,1) = 1/2*(dF3_deps_p(i,1)+dF3_deps_c(i,1));
+  % dF4_deps_avg(i,1) = 1/2*(dF4_deps_p(i,1)+dF4_deps_c(i,1));
+  % 
+  % % Final boundary node update
+  % F1(i+1,1) = F1(i,1) + dF1_deps_avg(i,1)*deps;
+  % F2(i+1,1) = F2(i,1) + dF2_deps_avg(i,1)*deps;
+  % F3(i+1,1) = F3(i,1) + dF3_deps_avg(i,1)*deps;
+  % F4(i+1,1) = F4(i,1) + dF4_deps_avg(i,1)*deps;
+  % 
+  % % Computing corrected rho at the boundary
+  % A = F3(i+1,1)^2/(2*F1(i+1,1)) - F4(i+1,1);
+  % B = gamma/(gamma-1)*F1(i+1,1)*F2(i+1,1);
+  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,1)^3;
+  % 
+  % rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+  % 
+  % % Computing primitive boundary values
+  % u_cal = F1(i+1,1)/rho_cal;
+  % v_cal = F3(i+1,1)/F1(i+1,1);
+  % p_cal = F2(i+1,1) - u_cal*F1(i+1,1); %%%%%%%%%%%
+  % T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
+  % a_cal = sqrt(gamma*R*T_cal);
+  % M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
+  % 
+  % % Computing the calculated Prandtl-Meyer function
+  % f_cal = prandtl_meyer_function(M_cal);
+  % 
+  % % Computing the Prandtl-Meyer rotation angle
+  % if (eps <= 10)
+  %   phi = atand(v_cal/u_cal);
+  % else
+  %   psi = atand(abs(v_cal)/u_cal);
+  %   phi = theta - psi;
+  % end
+  % 
+  % % Computing the actual Prandtl-Meyer function
+  % f_act = f_cal + phi;
+  % 
   % % Computing the M_act using Newton-Raphson method
   % tol = 1e-4;
   % error = 1;
   % RF = 0.1;
   % dM = 1e-4;
-  % %M_act = 1;  % guess value
+  % M_act = 1;  % guess value
   % while error > tol
-  %   M_act1a = M_cal1 - RF*(F(M_cal1, f_act1, gamma)/F_prime(f_act1, M_cal1, dM));
-  %   error = abs(F(M_act1a, f_act1, gamma));
-  %   M_cal1 = M_act1a;
+  %   M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
+  %   error = abs(F(f_act, M_act));
   % end
   % 
-
-  % Computing the actual values of primitive variables on the boundary
-  p_act1 = p_cal1*((1 + ((gamma-1)/2)*M_cal1^2)/(1 + ((gamma-1)/2)*M_act1^2))^(gamma/(gamma-1));
-  T_act1 = T_cal1*((1 + ((gamma-1)/2)*M_cal1^2)/(1 + ((gamma-1)/2)*M_act1^2));
-  rho_act1 = p_act1/(R*T_act1);
+  % % Computing the actual values of primitive variables on the boundary
+  % p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
+  % T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
+  % rho_act = p_act/(R*T_act);
   % 
-  % Updating the boundary node with actual boundary values
-  p(1,i+1) = p_act1;
-  T(1,i+1) = T_act1;
-  rho(1,i+1) = rho_act1;
-  u(1,i+1) = u_cal1;
-  v(1,i+1) = - u_cal1*tand(theta);
-  M(1,i+1) = M_act1;
-  a(1,i+1) = (sqrt(gamma*R*T_act1));
+  % % Updating the boundary node with actual boundary values
+  % p(i+1,1) = p_act;
+  % T(i+1,1) = T_act;
+  % rho(i+1,1) = rho_act;
+  % u(i+1,1) = u_cal;
+  % v(i+1,1) = - u_cal*tand(theta);
+  % M(i+1,1) = M_act;
+  % a(i+1,1) = (sqrt(gamma*R*T(i+1,1)));
   % 
   % % Top boundary
   % % Predictor step

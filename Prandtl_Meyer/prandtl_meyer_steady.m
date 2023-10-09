@@ -1,71 +1,76 @@
-%%%% ERROR in F2 term - yet to rectify
-% Prandtl_Meyer Expansion wave - 2D steady-state simulation
-
-clear all;
-close all;
-clc;
-
-% Actual Domain Dimensions
-% Height along y = 40 m
-% Length along x = 65 m
-% Expansion angle = 5.352 deg
-% Expansion point located at x = 10 m
-
-% Defining the Computational Domain
-H = 1;   % height along eta axis, m
-L = 65;  % length along xi axis, m
-n_y = 41;  % no of nodes along eta axis
-eta = linspace(0, H, n_y); % divisions along y axis aka, eta axis.
-eta_stepsize = H/(n_y-1);
-theta = 5.352;
-gamma = 1.4;
-R = 287.1848; % J/kg-K
-xi = 0;
-
-
-
-% Defining the initial data line
-p = 1.01e5*ones(n_y,1); % N/m^2
-rho = 1.23*ones(n_y,1); % Kg/m^3
-T = 286.1*ones(n_y,1);  % K
-M = 2*ones(n_y,1);
-a = sqrt(gamma*R*T); % speed of sound at 286.1 K
-u = M.*a;
-v = zeros(n_y,1);
-
-
-Co = 0.5;
-Cy = 0.6; % Range (0.01 - 0.3)
-
-iter = 0;
-
-
-
-
-%while (eps <= 65)
-%while i<=4
-%  i = i+1;
-
-  % Initializing F before first marching step
-
-  % for j = 1:n_y
-  %   F1a(j,i) = rho(j,i)*u(j,i);
-  %   F2a(j,i) = rho(j,i)*u(j,i)^2 + p(j,i);
-  %   F3a(j,i) = rho(j,i)*u(j,i)*v(j,i);
-  %   F4a(j,i) = (gamma/(gamma-1))*p(j,i)*u(j,i) + rho(j,i)*u(j,i)*(u(j,i)^2 + v(j,i)^2)/2;
-  % end
-
-  F1 = rho.*u;
-  F2 = rho.*u.^2 + p;
-  F3 = rho.*u.*v;
-  F4 = (gamma/(gamma-1))*p.*u + rho.*u.*(u.^2 + v.^2)/2;
+% %%%% ERROR in F2 term - yet to rectify
+% % Prandtl_Meyer Expansion wave - 2D steady-state simulation
+% 
+% clear;
+% close;
+% clc;
+% 
+% % Actual Domain Dimensions
+% % Height along y = 40 m
+% % Length along x = 65 m
+% % Expansion angle = 5.352 deg
+% % Expansion point located at x = 10 m
+% 
+% % Defining the Computational Domain
+% H_y = 40; % location of top boundary, m
+% H = 1;   % height along eta axis, m
+% L = 65;  % length along xi axis, m
+% n_y = 41;  % no of nodes along eta axis
+% eta = linspace(0, H, n_y); % divisions along y axis aka, eta axis.
+% eta_stepsize = H/(n_y-1);
+% theta = 5.352;
+% gamma = 1.4;
+% R = 287.1848; % J/kg-K
+% xi = 0;
+% x = xi*ones(n_y,1);
+% y = eta'*H_y;
+% 
+% %xi_stepsize = 0.1; % only for the time being, must be determined using CFL criteria
+% %n_x = round(L/xi_stepsize);
+% 
+% 
+% % Defining the initial data line
+% p = 1.01e5*ones(n_y,1); % N/m^2
+% rho = 1.23*ones(n_y,1); % Kg/m^3
+% T = 286.1*ones(n_y,1);  % K
+% M = 2*ones(n_y,1);
+% a = sqrt(gamma*R*T); % speed of sound at 286.1 K
+% u = M.*a;
+% v = zeros(n_y,1);
+% 
+% 
+% Co = 0.5;
+% Cy = 0.6; % Range (0.01 - 0.3)
+% 
+% iter = 0;
+% 
+% 
+% 
+% 
+% %while (eps <= 65)
+% %while i<=4
+% %  i = i+1;
+% 
+%   % Initializing F before first marching step
+% 
+%   % for j = 1:n_y
+%   %   F1a(j,i) = rho(j,i)*u(j,i);
+%   %   F2a(j,i) = rho(j,i)*u(j,i)^2 + p(j,i);
+%   %   F3a(j,i) = rho(j,i)*u(j,i)*v(j,i);
+%   %   F4a(j,i) = (gamma/(gamma-1))*p(j,i)*u(j,i) + rho(j,i)*u(j,i)*(u(j,i)^2 + v(j,i)^2)/2;
+%   % end
+% 
+%   % F1 = rho.*u;
+%   % F2 = rho.*u.^2 + p;
+%   % F3 = rho.*u.*v;
+%   % F4 = (gamma/(gamma-1))*p.*u + rho.*u.*(u.^2 + v.^2)/2;
 
 
   
   %%%% Start of Marching loop
-  for i = 1
+  for i = 29
   
-  % Updating G for each marching step
+  % Updating F and G for each marching step
 
   % for j = 1:n_y
   %   G1a(j,i) = rho(j,i)*v(j,i);
@@ -74,35 +79,48 @@ iter = 0;
   %   G4a(j,i) = gamma/(gamma-1)*p(j,i)*v(j,i) + rho(j,i)*v(j,i)*(u(j,i)^2 + v(j,i)^2)/2;
   % 
   % end
+  F1(:,i) = rho(:,i).*u(:,i);
+  F2(:,i) = rho(:,i).*u(:,i).^2 + p(:,i);
+  F3(:,i) = rho(:,i).*u(:,i).*v(:,i);
+  F4(:,i) = (gamma/(gamma-1))*p(:,i).*u(:,i) + rho(:,i).*u(:,i).*(u(:,i).^2 + v(:,i).^2)/2;
 
-  G1 = rho.*F3./F1;
-  G2 = F3;
-  G3 = rho.*(F3.^2./F1.^2) + F2 - (F1.^2./rho);
-  G4 = gamma/(gamma-1)*(F2-F1.^2./rho).*F3./F1 + (rho/2).*F3./F1.*(F1.^2./rho.^2 + F3.^2./F1.^2);
+  G1(:,i) = rho(:,i).*F3(:,i)./F1(:,i);
+  G2(:,i) = F3(:,i);
+  G3(:,i) = rho(:,i).*(F3(:,i).^2./F1(:,i).^2) + F2(:,i) - (F1(:,i).^2./rho(:,i));
+  G4(:,i) = gamma/(gamma-1)*(F2(:,i)-F1(:,i).^2./rho(:,i)).*F3(:,i)./F1(:,i) + (rho(:,i)/2).*F3(:,i)./F1(:,i).*(F1(:,i).^2./rho(:,i).^2 + F3(:,i).^2./F1(:,i).^2);
 
-  % Adaptive marching step size
-  xi_stepsize = 0.1; % only for the time being, must be determined using CFL criteria
+   % Adaptive marching step size
+  %xi_stepsize = 0.5; % only for the time being, must be determined using CFL criteria
   %n_x = L/xi_stepzize + 1;
 
-  % for j = 1:n_y-1
-  %   mu = asind(1/M(i,j));
-  %   value(1) = abs(tan(theta + mu));
-  %   value(2) = abs(tan(theta - mu));
-  %   deps_array(i,j) = Co*deta/max(value);
-  % end
-  % deps = min(deps_array(i,:));
-  % eps = eps + deps;
+mu = asind(1./M(:,i));
+value1 = abs(tand(theta + mu));
+value2 = abs(tand(theta - mu));
+value = max(value1, value2);
+dy(i) = y(2,i) - y(1,i);
+dx(i) = min(dy(i)./value);
   
-  xi = xi + xi_stepsize;
+  xi_stepsize(i) = Co*dx(i);
+  %xi_stepsize(i) = 0.1;
   
+  xi(i+1) = xi(i) + xi_stepsize(i);
+
   % Initializing h and deta_dx for each marching iteration
-  eta_a = 0;
-  if (xi <= 10)
-    h = 40;
+  %eta_a = 0;
+  x(:,i+1) = xi(i+1)*ones(n_y,1);
+  if (xi(i) <= 10)
+    h = H_y;
     deta_dx = zeros(n_y,1);
+    y_s = 0;
+    y(:,i+1) = y_s + eta*h;
+    
   else
-    h = 40 + (xi-10)*tand(theta);
+    h = H_y + (xi(i)-10)*tand(theta);
     deta_dx = (1-eta)*(tand(theta)/h);
+    h1 = H_y + (xi(i+1)-10)*tand(theta);
+    y_s = -(xi(i+1)-10)*tand(theta);
+    y(:,i+1) = y_s + eta*h;
+
     
     % for j = 1:n_y
     %   deta_dx_a(j) = (1-eta_a)*(tand(theta)/h);
@@ -110,7 +128,9 @@ iter = 0;
     % end
   end
 
-  for j = 1:n_y-1
+  
+
+  for j = 2:n_y-1
 
     % Predictor Step  
     dF1_dxi_p(j,i) = deta_dx(j)*(F1(j,i) - F1(j+1,i))/eta_stepsize + (1/h)*(G1(j,i) - G1(j+1,i))/eta_stepsize;
@@ -155,10 +175,10 @@ iter = 0;
   %   F4(j,i+1) = F4(j,i) + dF4_dxi_p(j,i)*xi_stepsize + SF4(j,i);
   % end
 
-  F1(:,i+1) = F1(:,i) + dF1_dxi_p(:,i)*xi_stepsize + SF1_p(:,i);
-  F2(:,i+1) = F2(:,i) + dF2_dxi_p(:,i)*xi_stepsize + SF2_p(:,i);
-  F3(:,i+1) = F3(:,i) + dF3_dxi_p(:,i)*xi_stepsize + SF3_p(:,i);
-  F4(:,i+1) = F4(:,i) + dF4_dxi_p(:,i)*xi_stepsize + SF4_p(:,i);
+  F1(:,i+1) = F1(:,i) + dF1_dxi_p(:,i)*xi_stepsize(i) + SF1_p(:,i);
+  F2(:,i+1) = F2(:,i) + dF2_dxi_p(:,i)*xi_stepsize(i) + SF2_p(:,i);
+  F3(:,i+1) = F3(:,i) + dF3_dxi_p(:,i)*xi_stepsize(i) + SF3_p(:,i);
+  F4(:,i+1) = F4(:,i) + dF4_dxi_p(:,i)*xi_stepsize(i) + SF4_p(:,i);
 
   %%%%% Here
   % for j = 2:n_y-1
@@ -254,10 +274,10 @@ iter = 0;
   %   F4(i+1,j) = F4(i,j) + dF4_deps_avg(i,j)*deps + SF4(i+1,j);
   % end
 
-  F1(:,i+1) = F1(:,i) + dF1_dxi_avg(:,i)*eta_stepsize + SF1_c(:,i);
-  F2(:,i+1) = F2(:,i) + dF2_dxi_avg(:,i)*eta_stepsize + SF2_c(:,i);
-  F3(:,i+1) = F3(:,i) + dF3_dxi_avg(:,i)*eta_stepsize + SF3_c(:,i);
-  F4(:,i+1) = F4(:,i) + dF4_dxi_avg(:,i)*eta_stepsize + SF4_c(:,i);
+  F1(:,i+1) = F1(:,i) + dF1_dxi_avg(:,i)*xi_stepsize(i) + SF1_c(:,i);
+  F2(:,i+1) = F2(:,i) + dF2_dxi_avg(:,i)*xi_stepsize(i) + SF2_c(:,i);
+  F3(:,i+1) = F3(:,i) + dF3_dxi_avg(:,i)*xi_stepsize(i) + SF3_c(:,i);
+  F4(:,i+1) = F4(:,i) + dF4_dxi_avg(:,i)*xi_stepsize(i) + SF4_c(:,i);
 
   
   % 
@@ -298,7 +318,7 @@ iter = 0;
   f_cal1 = prandtl_meyer_function(M_cal1,gamma);
 
   % Computing the Prandtl-Meyer rotation angle
-  if (xi <= 10)
+  if (xi(i) <= 10)
     phi1 = atand(v_cal1/u_cal1);
   else
     psi1 = atand(abs(v_cal1)/u_cal1);
@@ -335,106 +355,66 @@ iter = 0;
   T(1,i+1) = T_act1;
   rho(1,i+1) = rho_act1;
   u(1,i+1) = u_cal1;
-  v(1,i+1) = - u_cal1*tand(theta);
   M(1,i+1) = M_act1;
   a(1,i+1) = (sqrt(gamma*R*T_act1));
-  % 
+
+  if (xi(i) <= 10)
+       v(1,i+1) = 0;
+  else
+      v(1,i+1) = - u_cal1*tand(theta);
+  end
+  %
+
   % % Top boundary
-  % % Predictor step
-  % dF1_deps_p(i,n_y) = deta_dx(n_y)*(F1(i,n_y-1) - F1(i,n_y))/deta + (1/h)*(G1(i,n_y-1) - G1(i,n_y))/deta;
-  % dF2_deps_p(i,n_y) = deta_dx(n_y)*(F2(i,n_y-1) - F2(i,n_y))/deta + (1/h)*(G2(i,n_y-1) - G2(i,n_y))/deta;
-  % dF3_deps_p(i,n_y) = deta_dx(n_y)*(F3(i,n_y-1) - F3(i,n_y))/deta + (1/h)*(G3(i,n_y-1) - G3(i,n_y))/deta;
-  % dF4_deps_p(i,n_y) = deta_dx(n_y)*(F4(i,n_y-1) - F4(i,n_y))/deta + (1/h)*(G4(i,n_y-1) - G4(i,n_y))/deta;
-  % 
-  % % Predictor Update
-  % F1(i+1,n_y) = F1(i,n_y) + dF1_deps_p(i,n_y)*deps;
-  % F2(i+1,n_y) = F2(i,n_y) + dF2_deps_p(i,n_y)*deps;
-  % F3(i+1,n_y) = F3(i,n_y) + dF3_deps_p(i,n_y)*deps;
-  % F4(i+1,n_y) = F4(i,n_y) + dF4_deps_p(i,n_y)*deps;
-  % 
-  % % Computing rho
-  % A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
-  % B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
-  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
-  % 
-  % rho(i+1,n_y) = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  % 
-  % % Computing G
-  % G1(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y));
-  % G2(i+1,n_y) = F3(i+1,n_y);
-  % G3(i+1,n_y) = rho(i+1,n_y)*(F3(i+1,n_y)/F1(i+1,n_y))^2 + F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y);
-  % G4(i+1,n_y) = gamma/(gamma-1)*(F2(i+1,n_y) - F1(i+1,n_y)^2/rho(i+1,n_y))*F3(i+1,n_y)/F1(i+1,n_y) + rho(i+1,n_y)/2*F3(i+1,n_y)/F1(i+1,n_y)*((F1(i+1,n_y)/rho(i+1,n_y))^2 + (F3(i+1,n_y)/F1(i+1,n_y))^2);
-  % 
-  % % Corrector step
-  % dF1_deps_c(i,n_y) = deta_dx(n_y)*(F1(i+1,n_y-1) - F1(i+1,n_y))/deta + (1/h)*(G1(i+1,n_y-1) - G1(i+1,n_y))/deta;
-  % dF2_deps_c(i,n_y) = deta_dx(n_y)*(F2(i+1,n_y-1) - F2(i+1,n_y))/deta + (1/h)*(G2(i+1,n_y-1) - G2(i+1,n_y))/deta;
-  % dF3_deps_c(i,n_y) = deta_dx(n_y)*(F3(i+1,n_y-1) - F3(i+1,n_y))/deta + (1/h)*(G3(i+1,n_y-1) - G3(i+1,n_y))/deta;
-  % dF4_deps_c(i,n_y) = deta_dx(n_y)*(F4(i+1,n_y-1) - F4(i+1,n_y))/deta + (1/h)*(G4(i+1,n_y-1) - G4(i+1,n_y))/deta;
-  % 
-  % % Computing average
-  % dF1_deps_avg(i,n_y) = 1/2*(dF1_deps_p(i,n_y)+dF1_deps_c(i,n_y));
-  % dF2_deps_avg(i,n_y) = 1/2*(dF2_deps_p(i,n_y)+dF2_deps_c(i,n_y));
-  % dF3_deps_avg(i,n_y) = 1/2*(dF3_deps_p(i,n_y)+dF3_deps_c(i,n_y));
-  % dF4_deps_avg(i,n_y) = 1/2*(dF4_deps_p(i,n_y)+dF4_deps_c(i,n_y));
-  % 
-  % % Final boundary node update
-  % F1(i+1,n_y) = F1(i,n_y) + dF1_deps_avg(i,n_y)*deps;
-  % F2(i+1,n_y) = F2(i,n_y) + dF2_deps_avg(i,n_y)*deps;
-  % F3(i+1,n_y) = F3(i,n_y) + dF3_deps_avg(i,n_y)*deps;
-  % F4(i+1,n_y) = F4(i,n_y) + dF4_deps_avg(i,n_y)*deps;
-  % 
-  % % Computing corrected rho at the boundary
-  % A = F3(i+1,n_y)^2/(2*F1(i+1,n_y)) - F4(i+1,n_y);
-  % B = gamma/(gamma-1)*F1(i+1,n_y)*F2(i+1,n_y);
-  % C = -(gamma+1)/(2*(gamma-1))*F1(i+1,n_y)^3;
-  % 
-  % rho_cal = (-B + sqrt(B^2 - 4*A*C))/(2*A);
-  % 
-  % % Computing primitive boundary values
-  % u_cal = F1(i+1,n_y)/rho_cal;
-  % v_cal = F3(i+1,n_y)/F1(i+1,n_y);
-  % p_cal = F2(i+1,n_y) - u_cal*F1(i+1,n_y); %%%%%%%%%%%
-  % T_cal = p_cal/(rho_cal*R); %%%%%%%% define R
-  % a_cal = sqrt(gamma*R*T_cal);
-  % M_cal = sqrt( u_cal^2 + v_cal^2)/a_cal;
-  % 
-  % % Computing the calculated Prandtl-Meyer function
-  % f_cal = prandtl_meyer_function(M_cal);
-  % 
-  % % Computing the Prandtl-Meyer rotation angle
-  % phi = atand(v_cal/u_cal);
-  % 
-  % % Computing the actual Prandtl-Meyer function
-  % f_act = f_cal + phi;
-  % 
-  % % Computing the M_act using Newton-Raphson method
-  % tol = 1e-4;
-  % error = 1;
-  % RF = 0.1;
-  % dM = 1e-4;
-  % M_act = 1;  % guess value
-  % while error > tol
-  %   M_act = M_act - RF*(F(f_act, M_act)/F_prime(f_act, M_act, dM));
-  %  error = abs(F(f_act, M_act));
-  % end
-  % 
-  % % Computing the actual values of primitive variables on the boundary
-  % p_act = p_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2))^(gamma/(gamma-1));
-  % T_act = T_cal*((1 + ((gamma-1)/2)*M_cal^2)/(1 + ((gamma-1)/2)*M_act^2));
-  % rho_act = p_act/(R*T_act);
-  % 
-  % % Updating the boundary node with actual boundary values
-  % p(i+1,n_y) = p_act;
-  % T(i+1,n_y) = T_act;
-  % rho(i+1,n_y) = rho_act;
-  % u(i+1,n_y) = u_cal;
-  % v(i+1,n_y) = - u_cal*tand(theta);
-  % M(i+1,n_y) = M_act;
-  % a(i+1,n_y) = (sqrt(gamma*R*T(i+1,n_y)));
+  rho_calny = rho(n_y,i+1);
+  u_calny = u(n_y,i+1);
+  v_calny = v(n_y,i+1);
+  p_calny = p(n_y,i+1); 
+  T_calny = T(n_y,i+1); 
+  a_calny = a(n_y,i+1);
+  M_calny = M(n_y,i+1);
 
+   
+  % Computing the calculated Prandtl-Meyer function
+  f_calny = prandtl_meyer_function(M_calny,gamma);
 
+  % Computing the Prandtl-Meyer rotation angle
+  if (xi <= 10)
+    phiny = atand(v_calny/u_calny);
+  else
+    psiny = atand(abs(v_calny)/u_calny);
+    phiny = theta - psiny;
   end
 
+  % 
+  % Computing the actual Prandtl-Meyer function
+  f_actny = f_calny + phiny;
+
+  M_actny = fsolve(@(M) F (M,f_actny,gamma), M_calny);
+  
+  % Computing the actual values of primitive variables on the boundary
+  p_actny = p_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2))^(gamma/(gamma-1));
+  T_actny = T_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2));
+  rho_actny = p_actny/(R*T_actny);
+
+  % Updating the boundary node with actual boundary values
+  p(n_y,i+1) = p_actny;
+  T(n_y,i+1) = T_actny;
+  rho(n_y,i+1) = rho_actny;
+  u(n_y,i+1) = u_calny;
+  M(n_y,i+1) = M_actny;
+  a(n_y,i+1) = (sqrt(gamma*R*T_actny));
+  if (xi(i) <= 10)
+       v(n_y,i+1) = 0;
+  else
+      v(n_y,i+1) = - u_calny*tand(theta);
+  end
+
+  
+  end
+contourf(x,y,M);
+  colorbar;
+  %pause(0.1);
 
 
 

@@ -56,7 +56,7 @@ iter = 0;
 
   
   %%%% Start of Marching loop
-  for i = 1:1
+  for i = 1:16
   
   % Updating F and G for each marching step
 
@@ -82,11 +82,7 @@ iter = 0;
   %n_x = L/xi_stepzize + 1;
 
 mu = asind(1./M(:,i));
-if (x(i) <= 10)
-    theta = 0;
-else
-    theta = 5.352;
-end
+if (x(i) <)
 value1 = abs(tand(theta + mu));
 value2 = abs(tand(theta - mu));
 value = max(value1, value2);
@@ -97,7 +93,6 @@ dx(i) = min(dy(i)./value);
   %xi_stepsize(i) = 0.1;
   
   xi(i+1) = xi(i) + xi_stepsize(i);
-    theta = 5.352;
 
   % Initializing h and deta_dx for each marching iteration
   %eta_a = 0;

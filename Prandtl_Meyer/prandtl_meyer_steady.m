@@ -9,16 +9,17 @@ clc;
 % Height along y = 40 m
 % Length along x = 65 m
 % Expansion angle = 5.352 deg
-% Expansion point located at x = 10 m
+% Expansion point located at x, E = 10 m
 
 % Defining the Computational Domain
 H_y = 40; % location of top boundary, m
 H = 1;   % height along eta axis, m
 L = 65;  % length along xi axis, m
+E = 10;
 n_y = 41;  % no of nodes along eta axis
 eta = linspace(0, H, n_y); % divisions along y axis aka, eta axis.
 eta_stepsize = H/(n_y-1);
-theta = 5.352;
+Angle = 5.352*pi/180;   % radians
 gamma = 1.4;
 R = 287.1848; % J/kg-K
 xi = 0;
@@ -43,11 +44,11 @@ Co = 0.5;
 Cy = 0.6; % Range (0.01 - 0.3)
 
 iter = 0;
+i=1;
 
 
 
-
-%while (eps <= 65)
+while (xi(i) <= L)
 %while i<=4
 %  i = i+1;
 
@@ -56,7 +57,7 @@ iter = 0;
 
   
   %%%% Start of Marching loop
-  for i = 1:1
+  %for i = 1:100
   
   % Updating F and G for each marching step
 
@@ -81,14 +82,14 @@ iter = 0;
   %xi_stepsize = 0.5; % only for the time being, must be determined using CFL criteria
   %n_x = L/xi_stepzize + 1;
 
-mu = asind(1./M(:,i));
-if (x(i) <= 10)
+mu = asin(1./M(:,i));
+if (xi(i) <= E)
     theta = 0;
 else
-    theta = 5.352;
+    theta = Angle;
 end
-value1 = abs(tand(theta + mu));
-value2 = abs(tand(theta - mu));
+value1 = abs(tan(theta + mu));
+value2 = abs(tan(theta - mu));
 value = max(value1, value2);
 dy(i) = y(2,i) - y(1,i);
 dx(i) = min(dy(i)./value);
@@ -97,22 +98,22 @@ dx(i) = min(dy(i)./value);
   %xi_stepsize(i) = 0.1;
   
   xi(i+1) = xi(i) + xi_stepsize(i);
-    theta = 5.352;
+    %theta = 5.352*pi/180;
 
   % Initializing h and deta_dx for each marching iteration
   %eta_a = 0;
   x(:,i+1) = xi(i+1)*ones(n_y,1);
-  if (xi(i) <= 10)
+  if (xi(i) <= E)
     h = H_y;
     deta_dx = zeros(n_y,1);
     y_s = 0;
     y(:,i+1) = y_s + eta*h;
     
   else
-    h = H_y + (xi(i)-10)*tand(theta);
-    deta_dx = (1-eta)*(tand(theta)/h);
-    h1 = H_y + (xi(i+1)-10)*tand(theta);
-    y_s = -(xi(i+1)-10)*tand(theta);
+    h = H_y + (xi(i)-E)*tan(theta);
+    deta_dx = (1-eta)*(tan(theta)/h);
+    h1 = H_y + (xi(i+1)-E)*tan(theta);
+    y_s = -(xi(i+1)-E)*tan(theta);
     y(:,i+1) = y_s + eta*h;
 
     
@@ -307,15 +308,15 @@ dx(i) = min(dy(i)./value);
   a_cal1 = a(1,i+1);
   M_cal1 = M(1,i+1);
 
-   
+
   % Computing the calculated Prandtl-Meyer function
   f_cal1 = prandtl_meyer_function(M_cal1,gamma);
 
   % Computing the Prandtl-Meyer rotation angle
-  if (xi(i) <= 10)
-    phi1 = atand(v_cal1/u_cal1);
+  if (xi(i) <= E)
+    phi1 = atan(v_cal1/u_cal1);
   else
-    psi1 = atand(abs(v_cal1)/u_cal1);
+    psi1 = atan(abs(v_cal1)/u_cal1);
     phi1 = theta - psi1;
   end
 
@@ -323,19 +324,20 @@ dx(i) = min(dy(i)./value);
   % Computing the actual Prandtl-Meyer function
   f_act1 = f_cal1 + phi1;
 
+
   M_act1 = fsolve(@(M) F (M,f_act1,gamma), M_cal1);
-  % 
+  %M_act1 = bisection(f_act1, gamma); 
 
   % % Computing the M_act using Newton-Raphson method
   % tol = 1e-4;
   % error = 1;
   % RF = 0.1;
   % dM = 1e-4;
-  % %M_act = 1;  % guess value
+  % M_act1 = 1;  % guess value
   % while error > tol
-  %   M_act1a = M_cal1 - RF*(F(M_cal1, f_act1, gamma)/F_prime(f_act1, M_cal1, dM));
-  %   error = abs(F(M_act1a, f_act1, gamma));
-  %   M_cal1 = M_act1a;
+  %   M_act1 = M_act1 - RF*(F(M_act1, f_act1, gamma)/F_prime(f_act1, M_act1, dM));
+  %   error = abs(F(M_act1, f_act1, gamma));
+  %   %M_cal1 = M_act1;
   % end
   % 
 
@@ -352,62 +354,63 @@ dx(i) = min(dy(i)./value);
   M(1,i+1) = M_act1;
   a(1,i+1) = (sqrt(gamma*R*T_act1));
 
-  if (xi(i) <= 10)
+  if (xi(i) <= E)
        v(1,i+1) = 0;
   else
-      v(1,i+1) = - u_cal1*tand(theta);
+      v(1,i+1) = - u_cal1*tan(theta);
   end
   %
 
-  % % Top boundary
-  rho_calny = rho(n_y,i+1);
-  u_calny = u(n_y,i+1);
-  v_calny = v(n_y,i+1);
-  p_calny = p(n_y,i+1); 
-  T_calny = T(n_y,i+1); 
-  a_calny = a(n_y,i+1);
-  M_calny = M(n_y,i+1);
-
-   
-  % Computing the calculated Prandtl-Meyer function
-  f_calny = prandtl_meyer_function(M_calny,gamma);
-
-  % Computing the Prandtl-Meyer rotation angle
-  if (xi <= 10)
-    phiny = atand(v_calny/u_calny);
-  else
-    psiny = atand(abs(v_calny)/u_calny);
-    phiny = theta - psiny;
-  end
-
+  % % % Top boundary
+  % rho_calny = rho(n_y,i+1);
+  % u_calny = u(n_y,i+1);
+  % v_calny = v(n_y,i+1);
+  % p_calny = p(n_y,i+1); 
+  % T_calny = T(n_y,i+1); 
+  % a_calny = a(n_y,i+1);
+  % M_calny = M(n_y,i+1);
   % 
-  % Computing the actual Prandtl-Meyer function
-  f_actny = f_calny + phiny;
-
-  M_actny = fsolve(@(M) F (M,f_actny,gamma), M_calny);
-  
-  % Computing the actual values of primitive variables on the boundary
-  p_actny = p_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2))^(gamma/(gamma-1));
-  T_actny = T_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2));
-  rho_actny = p_actny/(R*T_actny);
-
-  % Updating the boundary node with actual boundary values
-  p(n_y,i+1) = p_actny;
-  T(n_y,i+1) = T_actny;
-  rho(n_y,i+1) = rho_actny;
-  u(n_y,i+1) = u_calny;
-  M(n_y,i+1) = M_actny;
-  a(n_y,i+1) = (sqrt(gamma*R*T_actny));
-  if (xi(i) <= 10)
-       v(n_y,i+1) = 0;
-  else
-      v(n_y,i+1) = - u_calny*tand(theta);
-  end
-
-  
-  end
+  % 
+  % % Computing the calculated Prandtl-Meyer function
+  % f_calny = prandtl_meyer_function(M_calny,gamma);
+  % 
+  % %Computing the Prandtl-Meyer rotation angle
+  % if (xi(i) <= E)
+  %   phiny = atan(v_calny/u_calny);
+  % else
+  %   psiny = atan(abs(v_calny)/u_calny);
+  %   phiny = theta - psiny;
+  % end
+  % 
+  % 
+  % % 
+  % % Computing the actual Prandtl-Meyer function
+  % f_actny = f_calny + phiny;
+  % 
+  % M_actny = fsolve(@(M) F (M,f_actny,gamma), M_calny);
+  % %M_actny = bisection(f_actny, gamma);
+  % % Computing the actual values of primitive variables on the boundary
+  % p_actny = p_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2))^(gamma/(gamma-1));
+  % T_actny = T_calny*((1 + ((gamma-1)/2)*M_calny^2)/(1 + ((gamma-1)/2)*M_actny^2));
+  % rho_actny = p_actny/(R*T_actny);
+  % 
+  % % Updating the boundary node with actual boundary values
+  % p(n_y,i+1) = p_actny;
+  % T(n_y,i+1) = T_actny;
+  % rho(n_y,i+1) = rho_actny;
+  % u(n_y,i+1) = u_calny;
+  % M(n_y,i+1) = M_actny;
+  % a(n_y,i+1) = (sqrt(gamma*R*T_actny));
+  % if (xi(i) <= E)
+  %      v(n_y,i+1) = 0;
+  % else
+  %     v(n_y,i+1) = - u_calny*tan(theta);
+  % end
+i = i+1;
+end
 contourf(x,y,M);
-  colorbar;
+colormap('jet');
+colorbar;
   %pause(0.1);
 
 

@@ -12,25 +12,23 @@ clc;
 % Expansion point located at x, E = 10 m
 
 % Defining the Computational Domain
-H_y = 40; % location of top boundary, m
-H = 1;   % height along eta axis, m
-L = 65;  % length along xi axis, m
-E = 10;
-n_y = 41;  % no of nodes along eta axis
-eta = linspace(0, H, n_y); % divisions along y axis aka, eta axis.
-eta_stepsize = H/(n_y-1);
-Angle = 5.352*pi/180;   % radians
-gamma = 1.4;
-R = 287.1848; % J/kg-K
-xi = 0;
-x = xi*ones(n_y,1);
-y = eta'*H_y;
-
-%xi_stepsize = 0.1; % only for the time being, must be determined using CFL criteria
-%n_x = round(L/xi_stepsize);
+H_y = 40;   % location of top boundary, m
+H = 1;      % height along eta axis, m
+L = 65;     % length along xi axis, m
+E = 10;     % Expansion point location, m
+n_y = 41;   % no of nodes along eta axis
+eta = linspace(0, H, n_y)';  % divisions along y axis aka, eta axis.
+eta_stepsize = H/(n_y-1);   % step size along eta axis
+Angle = 5.352*pi/180;       % Expansion angle, radians
+gamma = 1.4;        % Specific Heat Ratio
+R = 287.1848;       % Gas constant, J/kg-K
+xi = 0; 
+x = xi*ones(n_y,1); % x-coordinates for initial data line
+y = eta*H_y;        % y-coordinates for initial data line
 
 
 % Defining the initial data line
+
 p = 1.01e5*ones(n_y,1); % N/m^2
 rho = 1.23*ones(n_y,1); % Kg/m^3
 T = 286.1*ones(n_y,1);  % K
@@ -40,94 +38,70 @@ u = M.*a;
 v = zeros(n_y,1);
 
 
-Co = 0.5;
-Cy = 0.6; % Range (0.01 - 0.3)
+Co = 0.5;   % Courant number for spatial marching
+Cy = 0.6;   % Coefficient for Artificial Viscosity - Range (0.01 - 0.3)
 
-iter = 0;
 i=1;
 
-
-
 while (xi(i) <= L)
-%while i<=4
-%  i = i+1;
-
-  % Initializing F before first marching step
 
 
+    % Initializing F for each marching step
+    F1(:,i) = rho(:,i).*u(:,i);
+    F2(:,i) = rho(:,i).*u(:,i).^2 + p(:,i);
+    F3(:,i) = rho(:,i).*u(:,i).*v(:,i);
+    F4(:,i) = (gamma/(gamma-1))*p(:,i).*u(:,i) + rho(:,i).*u(:,i).*(u(:,i).^2 + v(:,i).^2)/2;
+
+    G1(:,i) = rho(:,i).*F3(:,i)./F1(:,i);
+    G2(:,i) = F3(:,i);
+    G3(:,i) = rho(:,i).*(F3(:,i).^2./F1(:,i).^2) + F2(:,i) - (F1(:,i).^2./rho(:,i));
+    G4(:,i) = gamma/(gamma-1)*(F2(:,i)-F1(:,i).^2./rho(:,i)).*F3(:,i)./F1(:,i) + (rho(:,i)/2).*F3(:,i)./F1(:,i).*(F1(:,i).^2./rho(:,i).^2 + F3(:,i).^2./F1(:,i).^2);
+    
+    % Adaptive marching step size
+
+    mu = asin(1./M(:,i));
+    if (xi(i) <= E)
+        theta = 0;
+    else
+        theta = Angle;
+    end
+    value1 = abs(tan(theta + mu));
+    value2 = abs(tan(theta - mu));
+    value = max(value1, value2);
+    dy(i) = y(2,i) - y(1,i);
+    dx(i) = min(dy(i)./value);
   
-  %%%% Start of Marching loop
-  %for i = 1:100
-  
-  % Updating F and G for each marching step
-
-  % for j = 1:n_y
-  %   G1a(j,i) = rho(j,i)*v(j,i);
-  %   G2a(j,i) = rho(j,i)*u(j,i)*v(j,i);
-  %   G3a(j,i) = rho(j,i)*v(j,i)^2 + p(j,i);
-  %   G4a(j,i) = gamma/(gamma-1)*p(j,i)*v(j,i) + rho(j,i)*v(j,i)*(u(j,i)^2 + v(j,i)^2)/2;
-  % 
-  % end
-  F1(:,i) = rho(:,i).*u(:,i);
-  F2(:,i) = rho(:,i).*u(:,i).^2 + p(:,i);
-  F3(:,i) = rho(:,i).*u(:,i).*v(:,i);
-  F4(:,i) = (gamma/(gamma-1))*p(:,i).*u(:,i) + rho(:,i).*u(:,i).*(u(:,i).^2 + v(:,i).^2)/2;
-
-  G1(:,i) = rho(:,i).*F3(:,i)./F1(:,i);
-  G2(:,i) = F3(:,i);
-  G3(:,i) = rho(:,i).*(F3(:,i).^2./F1(:,i).^2) + F2(:,i) - (F1(:,i).^2./rho(:,i));
-  G4(:,i) = gamma/(gamma-1)*(F2(:,i)-F1(:,i).^2./rho(:,i)).*F3(:,i)./F1(:,i) + (rho(:,i)/2).*F3(:,i)./F1(:,i).*(F1(:,i).^2./rho(:,i).^2 + F3(:,i).^2./F1(:,i).^2);
-
-   % Adaptive marching step size
-  %xi_stepsize = 0.5; % only for the time being, must be determined using CFL criteria
-  %n_x = L/xi_stepzize + 1;
-
-mu = asin(1./M(:,i));
-if (xi(i) <= E)
-    theta = 0;
-else
-    theta = Angle;
-end
-value1 = abs(tan(theta + mu));
-value2 = abs(tan(theta - mu));
-value = max(value1, value2);
-dy(i) = y(2,i) - y(1,i);
-dx(i) = min(dy(i)./value);
-  
-  xi_stepsize(i) = Co*dx(i);
-  %xi_stepsize(i) = 0.1;
-  
-  xi(i+1) = xi(i) + xi_stepsize(i);
-    %theta = 5.352*pi/180;
+    xi_stepsize(i) = Co*dx(i);  
+    xi(i+1) = xi(i) + xi_stepsize(i);   % Next step size
+    
 
   % Initializing h and deta_dx for each marching iteration
-  %eta_a = 0;
-  x(:,i+1) = xi(i+1)*ones(n_y,1);
+  
+  x(:,i+1) = xi(i+1)*ones(n_y,1);   % x coordinates
+
   if (xi(i) <= E)
     h = H_y;
     deta_dx = zeros(n_y,1);
+    
+    % y coordinates
     y_s = 0;
-    y(:,i+1) = y_s + eta*h;
+    y(:,i+1) = y_s + eta*h; 
     
   else
     h = H_y + (xi(i)-E)*tan(theta);
     deta_dx = (1-eta)*(tan(theta)/h);
+
+    % y coordinates
     h1 = H_y + (xi(i+1)-E)*tan(theta);
     y_s = -(xi(i+1)-E)*tan(theta);
     y(:,i+1) = y_s + eta*h;
 
-    
-    % for j = 1:n_y
-    %   deta_dx_a(j) = (1-eta_a)*(tand(theta)/h);
-    %   eta_a = eta_a + eta_stepsize;
-    % end
   end
 
-  
+  %%% Predictor Step
 
   for j = 2:n_y-1
-
-    % Predictor Step  
+      
     dF1_dxi_p(j,i) = deta_dx(j)*(F1(j,i) - F1(j+1,i))/eta_stepsize + (1/h)*(G1(j,i) - G1(j+1,i))/eta_stepsize;
     dF2_dxi_p(j,i) = deta_dx(j)*(F2(j,i) - F2(j+1,i))/eta_stepsize + (1/h)*(G2(j,i) - G2(j+1,i))/eta_stepsize;
     dF3_dxi_p(j,i) = deta_dx(j)*(F3(j,i) - F3(j+1,i))/eta_stepsize + (1/h)*(G3(j,i) - G3(j+1,i))/eta_stepsize;
@@ -150,10 +124,12 @@ dx(i) = min(dy(i)./value);
   
   % Computing Artificial viscosity for Predictor Step %%%%%%%%%
   for j = 2:n_y-1
+
     SF1_p(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F1(j+1,i) - 2*F1(j,i) + F1(j-1,i));
     SF2_p(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F2(j+1,i) - 2*F2(j,i) + F2(j-1,i));
     SF3_p(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F3(j+1,i) - 2*F3(j,i) + F3(j-1,i));
     SF4_p(j,i) = Cy*abs(p(j+1,i) - 2*p(j,i) + p(j-1,i))/(p(j+1,i) + 2*p(j,i) + p(j-1,i))*(F4(j+1,i) - 2*F4(j,i) + F4(j-1,i));
+  
   end
   
   % At bundaries
